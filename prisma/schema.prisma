@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Cliente {
+  id           Int         @id @default(autoincrement())
+  nome         String      @db.VarChar(60) 
+  telefone     String      @db.VarChar(20)
+  saldo        Decimal     @db.Decimal(9,2) @default(0)
+  email        String      @db.VarChar(60) 
+  veiculos      Veiculo[]
+  @@map("clientes")
+}
+
+model Veiculo {
+  id           Int         @id @default(autoincrement())
+  modelo       String      @db.VarChar(30) 
+  marca        String      @db.VarChar(30) 
+  placa        String      @db.VarChar(40) 
+  ano          Decimal     @db.Decimal(4,0)
+  status       String?     @db.Text
+  clienteId    Int
+  cliente      Cliente     @relation(fields: [clienteId], references: [id])
+  ordensServico OrdemServico[]
+  depositos    Deposito[]
+  vendas       Venda[]
+  @@map("veiculos")
+}
+
+model OrdemServico {
+  id               Int        @id @default(autoincrement())
+  data_entrada     String     @db.VarChar(60) 
+  data_saida       String     @db.VarChar(60) 
+  status           Int        @db.SmallInt
+  valor            Decimal    @db.Decimal(9,2)
+  VeiculoId         Int
+  veiculo          Veiculo     @relation(fields: [VeiculoId], references: [id])
+  ServicoId          Int
+  servico           Servico      @relation(fields: [ServicoId], references: [id])
+  vendas           Venda[]
+  @@map("ordens_servico")
+}
+
+model Servico {
+  id         Int        @id @default(autoincrement())
+  descricao  String     @db.VarChar(60) 
+  valor      Decimal    @db.Decimal(9,2)
+  ordensServico OrdemServico[]
+  @@map("servicos")
+}
+
+model Deposito {
+  id         Int        @id @default(autoincrement())
+  veiculo    Veiculo      @relation(fields: [veiculoId], references: [id])
+  veiculoId  Int
+  valor      Decimal    @db.Decimal(9,2)
+  tipo       Tipos
+  data       DateTime   @default(now())
+  @@map("depositos")
+}
+
+model Venda {
+  id         Int       @id @default(autoincrement())
+  veiculo    Veiculo     @relation(fields: [veiculoId], references: [id])
+  veiculoId  Int
+  ordemServico    OrdemServico   @relation(fields: [ordemServicoId], references: [id])
+  ordemServicoId  Int
+  quant      Int       @db.SmallInt
+  preco      Decimal   @db.Decimal(9,2)
+  data       DateTime  @default(now())
+  @@map("vendas")
+}
+
+enum Tipos {
+  PIX
+  Dinheiro
+  Cartao
+}
