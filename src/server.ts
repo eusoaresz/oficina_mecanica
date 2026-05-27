@@ -4,7 +4,7 @@ const port = 3000
 
 import routesAlunos from "./routes/alunos"
 import routesDepositos from "./routes/depositos"
-import routesProdutos from "./routes/produtos"
+import routesProdutos from "./routes/veiculo"
 import routesVendas from "./routes/vendas"
 
 app.use(express.json())
