@@ -12,7 +12,7 @@ const clienteSchema = z.object({
     telefone: z.string()
       .min(10, 'Telefone deve possuir no mínimo 10 caracteres')
       .max(20, 'Telefone deve ter no máximo 20 caracteres'),
-    email: z.email(),
+    email: z.string().email('E-mail inválido'),
   })
 
 router.get("/", async (req, res) => {
@@ -81,6 +81,29 @@ router.delete("/:id", async (req, res) => {
     } catch (error) {
         res.status(500).json({ erro: error })
     }
+})
+
+router.get("/email/:id", async (req, res) => {
+  const { id } = req.params
+  try {
+    const cliente = await prisma.cliente.findUnique({
+      where: { id: Number(id) },
+      include: {
+        veiculos: true
+      }
+    })
+
+    if (!cliente) {
+      res.status(404).json({ erro: 'Cliente não cadastrado' })
+      return
+    }
+
+    await enviaEmail(cliente)
+
+    res.status(200).json(cliente)
+  } catch (error) {
+    res.status(500).json({ erro: error })
+  }
 })
 
 router.get('/:id', async (req, res) => {
@@ -185,28 +208,4 @@ async function enviaEmail(dados: any) {
 
   console.log("Message sent:", info.messageId);
 }
-
-router.get("/email/:id", async (req, res) => {
-  const { id } = req.params
-  try {
-    const cliente = await prisma.cliente.findUnique({
-      where: { id: Number(id) },
-      include: {
-        veiculos: true
-      }
-    })
-
-    if (!cliente) {
-      res.status(404).json({ erro: 'Cliente não cadastrado' })
-      return
-    }
-
-    await enviaEmail(cliente)
-
-    res.status(200).json(cliente)
-  } catch (error) {
-    res.status(500).json({ erro: error })
-  }
-})
-
 export default router
