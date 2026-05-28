@@ -2,17 +2,17 @@ import express from 'express'
 const app = express()
 const port = 3000
 
-import routesAlunos from "./routes/clientes"
+import routesClientes from "./routes/clientes"
 import routesDepositos from "./routes/depositos"
-import routesProdutos from "./routes/veiculo"
-import routesVendas from "./routes/vendas"
+import routesVeiculos from "./routes/veiculo"
+import routesOrdemServico from "./routes/ordemServico"
 
 app.use(express.json())
 
-app.use("/clientes", routesAlunos)
+app.use("/clientes", routesClientes)
 app.use("/depositos", routesDepositos)
-app.use("/veiculos", routesProdutos)
-app.use("/vendas", routesVendas)
+app.use("/veiculos", routesVeiculos)
+app.use("/ordemServico", routesOrdemServico)
 
 app.get('/', (req, res) => {
   res.send('API: Sistema de uma Oficina Mecânica')

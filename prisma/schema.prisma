@@ -28,21 +28,19 @@ model Veiculo {
   clienteId    Int
   cliente      Cliente     @relation(fields: [clienteId], references: [id])
   ordensServico OrdemServico[]
-  vendas       Venda[]
   @@map("veiculos")
 }
 
 model OrdemServico {
-  id               Int        @id @default(autoincrement())
-  data_entrada     String     @db.VarChar(60) 
-  data_saida       String     @db.VarChar(60) 
-  status           Int        @db.SmallInt
-  valor            Decimal    @db.Decimal(9,2)
-  VeiculoId         Int
-  veiculo          Veiculo     @relation(fields: [VeiculoId], references: [id])
-  ServicoId          Int
-  servico           Servico      @relation(fields: [ServicoId], references: [id])
-  vendas           Venda[]
+  id           Int                  @id @default(autoincrement())
+  dataEntrada  DateTime             @default(now()) @map("data_entrada")
+  dataSaida    DateTime?            @map("data_saida")
+  status       StatusOrdemServico   @default(ABERTA)
+  valor        Decimal              @db.Decimal(9,2)
+  veiculoId    Int                  @map("VeiculoId")
+  veiculo      Veiculo              @relation(fields: [veiculoId], references: [id])
+  servicoId    Int                  @map("ServicoId")
+  servico      Servico              @relation(fields: [servicoId], references: [id])
   @@map("ordens_servico")
 }
 
@@ -64,20 +62,16 @@ model Deposito {
   @@map("depositos")
 }
 
-model Venda {
-  id         Int       @id @default(autoincrement())
-  veiculo    Veiculo     @relation(fields: [veiculoId], references: [id])
-  veiculoId  Int
-  ordemServico    OrdemServico   @relation(fields: [ordemServicoId], references: [id])
-  ordemServicoId  Int
-  quant      Int       @db.SmallInt
-  preco      Decimal   @db.Decimal(9,2)
-  data       DateTime  @default(now())
-  @@map("vendas")
-}
-
 enum Tipos {
   PIX
   Dinheiro
   Cartao
+}
+
+enum StatusOrdemServico {
+  ABERTA
+  EM_ANDAMENTO
+  AGUARDANDO_PAGAMENTO
+  CONCLUIDA
+  CANCELADA
 }
