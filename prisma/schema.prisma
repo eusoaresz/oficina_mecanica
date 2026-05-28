@@ -14,6 +14,7 @@ model Cliente {
   saldo        Decimal     @db.Decimal(9,2) @default(0)
   email        String      @db.VarChar(60) 
   veiculos      Veiculo[]
+  depositos     Deposito[]
   @@map("clientes")
 }
 
@@ -27,7 +28,6 @@ model Veiculo {
   clienteId    Int
   cliente      Cliente     @relation(fields: [clienteId], references: [id])
   ordensServico OrdemServico[]
-  depositos    Deposito[]
   vendas       Venda[]
   @@map("veiculos")
 }
@@ -56,8 +56,8 @@ model Servico {
 
 model Deposito {
   id         Int        @id @default(autoincrement())
-  veiculo    Veiculo      @relation(fields: [veiculoId], references: [id])
-  veiculoId  Int
+  cliente    Cliente      @relation(fields: [clienteId], references: [id])
+  clienteId  Int
   valor      Decimal    @db.Decimal(9,2)
   tipo       Tipos
   data       DateTime   @default(now())

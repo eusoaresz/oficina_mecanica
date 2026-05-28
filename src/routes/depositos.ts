@@ -1,14 +1,14 @@
 import { prisma } from "../../lib/prisma"
 import { Router } from "express"
-import { includes, z } from "zod"
-import { Tipos } from "../../generated/prisma/enums";
+import { z } from "zod"
+import { Tipos } from "../../generated/prisma";
 
 const router = Router()
 
 export const depositoSchema = z.object({
-    alunoId: z.number().int()
-      .positive('ID do aluno deve ser um número positivo'),
-    tipo: z.enum(Tipos),
+    clienteId: z.number().int()
+      .positive('ID do cliente deve ser um número positivo'),
+    tipo: z.nativeEnum(Tipos),
     valor: z.number()
       .positive('Valor deve ser um número positivo'),
 })
@@ -16,7 +16,7 @@ export const depositoSchema = z.object({
 router.get("/", async (req, res) => {
     try {
         const depositos = await prisma.deposito.findMany({
-            include: { aluno: true }
+            include: { cliente: true }
         })
         res.status(200).json(depositos)
     } catch (error) {
@@ -33,27 +33,27 @@ router.post("/", async (req, res) => {
     }
 
     // Desestrutura os dados validados
-    const { alunoId, valor, tipo } = valida.data
+    const { clienteId, valor, tipo } = valida.data
 
-    const aluno = await prisma.aluno.findUnique({
-        where: { id: alunoId }
+    const cliente = await prisma.cliente.findUnique({
+        where: { id: clienteId }
     })
 
-    if (!aluno) {
-        res.status(404).json({ erro: 'Aluno não cadastrado' })
+    if (!cliente) {
+        res.status(404).json({ erro: 'Cliente não cadastrado' })
         return
     }
 
     try {
-        // Transação para incluir o depósito e alterar o saldo do aluno
-        const [deposito, aluno] = await prisma.$transaction([
-           prisma.deposito.create({ data: { alunoId, tipo, valor }}),
-           prisma.aluno.update({
+        // Transação para incluir o depósito e alterar o saldo do cliente
+        const [deposito, cliente] = await prisma.$transaction([
+           prisma.deposito.create({ data: { clienteId, tipo, valor }}),
+           prisma.cliente.update({
             data: { saldo: { increment: valor }},
-            where: { id: alunoId }
+            where: { id: clienteId }
            })
         ])        
-        res.status(201).json({deposito, aluno})
+        res.status(201).json({deposito, cliente})
     } catch (error) {
         res.status(500).json({ error })
     }
@@ -70,15 +70,15 @@ router.delete("/:id", async (req, res) => {
             { where: { id: Number(id)} }
         )
 
-        const [deposito, aluno] = await prisma.$transaction([
+        const [deposito, cliente] = await prisma.$transaction([
             prisma.deposito.delete({ where: { id: Number(id)} }),
-            prisma.aluno.update({
+            prisma.cliente.update({
               data: { saldo: { decrement: depositoExcluido?.valor }},
-              where: { id: depositoExcluido?.alunoId }
+              where: { id: depositoExcluido?.clienteId }
            })
         ])
 
-        res.status(200).json({deposito, aluno})
+        res.status(200).json({deposito, cliente})
     } catch (error) {
         res.status(500).json({ erro: error })
     }
