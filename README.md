@@ -1,6 +1,6 @@
 # Sistema de Controle de Oficina
 
-API backend em Node.js com Express, TypeScript, Prisma e MySQL para gerenciamento de clientes, veículos, ordens de serviço, depósitos e vendas.
+API backend em Node.js com Express, TypeScript, Prisma e MySQL para gerenciamento de clientes, veículos, ordens de serviço e depósitos.
 
 ## Tecnologias
 
