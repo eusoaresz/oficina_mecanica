@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma"
 import { Router } from 'express'
 import { z } from 'zod'
+import { transporter } from "../../lib/mailer"
 
 const router = Router()
 
@@ -21,6 +22,129 @@ const atualizarOrdemSchema = z.object({
   status:   statusEnum.optional(),
   dataSaida: z.string().datetime().nullable().optional()
 })
+
+function formatarMoeda(valor: unknown) {
+  return Number(valor ?? 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
+function gerarEmailOrdemServico(dados: any) {
+  const cliente = dados.veiculo?.cliente
+  const veiculo = dados.veiculo
+  const servico = dados.servico
+  const dataEmissao = new Date().toLocaleString("pt-BR")
+
+  return `
+    <html>
+      <head>
+        <meta charset="UTF-8" />
+      </head>
+      <body style="font-family: Arial, Helvetica, sans-serif; color: #1f2937;">
+        <div style="max-width: 760px; margin: 0 auto; border: 1px solid #c7c7c7; background: #ffffff;">
+          <div style="padding: 18px 20px 14px; border-bottom: 1px solid #c7c7c7; background: linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%);">
+            <h2 style="margin: 0; font-size: 20px; color: #111827;">Oficina Mecânica - Ordem de Serviço</h2>
+            <p style="margin: 6px 0 0; font-size: 13px; color: #4b5563;">Resumo da ordem de serviço gerada automaticamente</p>
+          </div>
+
+          <div style="padding: 18px 20px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr>
+                <td style="padding: 6px 0; width: 170px;"><strong>Cliente:</strong></td>
+                <td style="padding: 6px 0;">${cliente?.nome ?? "-"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0;"><strong>Email:</strong></td>
+                <td style="padding: 6px 0;">${cliente?.email ?? "-"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0;"><strong>Emitido em:</strong></td>
+                <td style="padding: 6px 0;">${dataEmissao}</td>
+              </tr>
+            </table>
+
+            <div style="margin: 18px 0 10px; padding: 10px 12px; background: #ededed; border: 1px solid #c7c7c7; font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.02em;">
+              Dados do veículo
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr>
+                <td style="padding: 6px 0; width: 170px;"><strong>Modelo:</strong></td>
+                <td style="padding: 6px 0;">${veiculo?.modelo ?? "-"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0;"><strong>Marca:</strong></td>
+                <td style="padding: 6px 0;">${veiculo?.marca ?? "-"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0;"><strong>Placa:</strong></td>
+                <td style="padding: 6px 0;">${veiculo?.placa ?? "-"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0;"><strong>Ano:</strong></td>
+                <td style="padding: 6px 0;">${veiculo?.ano ?? "-"}</td>
+              </tr>
+            </table>
+
+            <div style="margin: 18px 0 10px; padding: 10px 12px; background: #ededed; border: 1px solid #c7c7c7; font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.02em;">
+              Detalhes da ordem
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr>
+                <td style="padding: 6px 0; width: 170px;"><strong>Serviço:</strong></td>
+                <td style="padding: 6px 0;">${servico?.descricao ?? "-"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0;"><strong>Status:</strong></td>
+                <td style="padding: 6px 0;">${dados.status ?? "-"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0;"><strong>Valor:</strong></td>
+                <td style="padding: 6px 0;">R$ ${formatarMoeda(dados.valor)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0;"><strong>Entrada:</strong></td>
+                <td style="padding: 6px 0;">${dados.dataEntrada ? new Date(dados.dataEntrada).toLocaleString("pt-BR") : "-"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0;"><strong>Saída:</strong></td>
+                <td style="padding: 6px 0;">${dados.dataSaida ? new Date(dados.dataSaida).toLocaleString("pt-BR") : "-"}</td>
+              </tr>
+            </table>
+
+            <div style="margin-top: 18px; padding: 12px; border-top: 1px solid #c7c7c7; font-size: 12px; color: #6b7280; text-align: center;">
+              Este é um email automático referente ao cadastro de uma nova ordem de serviço.
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `
+}
+
+async function enviarEmailOrdemServico(dados: any) {
+  const html = gerarEmailOrdemServico(dados)
+
+  await transporter.sendMail({
+    from: "Oficina Mecânica <mecanicaOficina@gmail.com>",
+    to: dados.veiculo?.cliente?.email,
+    subject: "Nova ordem de serviço registrada",
+    text: [
+      `Nome do cliente: ${dados.veiculo?.cliente?.nome ?? "-"}`,
+      `Email: ${dados.veiculo?.cliente?.email ?? "-"}`,
+      `Modelo: ${dados.veiculo?.modelo ?? "-"}`,
+      `Marca: ${dados.veiculo?.marca ?? "-"}`,
+      `Placa: ${dados.veiculo?.placa ?? "-"}`,
+      `Ano: ${dados.veiculo?.ano ?? "-"}`,
+      `Valor: R$ ${formatarMoeda(dados.valor)}`,
+      `Status: ${dados.status ?? "-"}`,
+      `Descrição: ${dados.servico?.descricao ?? "-"}`,
+    ].join("\n"),
+    html,
+  })
+}
 
 // ── GET / ── lista todas as ordens de serviço ──────────────────────────────
 router.get("/", async (req, res) => {
@@ -97,10 +221,20 @@ router.post("/", async (req, res) => {
         dataSaida:   dataSaida   ? new Date(dataSaida)   : null
       },
       include: {
-        veiculo: true,
+        veiculo: {
+          include: {
+            cliente: true
+          }
+        },
         servico: true
       }
     })
+
+    try {
+      await enviarEmailOrdemServico(novaOrdem)
+    } catch (emailError) {
+      console.error("Erro ao enviar email da ordem de serviço:", emailError)
+    }
 
     res.status(201).json(novaOrdem)
   } catch (error) {
@@ -141,7 +275,11 @@ router.put("/:id", async (req, res) => {
         })
       },
       include: {
-        veiculo: true,
+        veiculo: {
+          include: {
+            cliente: true
+          }
+        },
         servico: true
       }
     })

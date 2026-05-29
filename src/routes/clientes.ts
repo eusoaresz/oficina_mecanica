@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma"
 import { Router } from "express"
 import { z } from "zod"
-import nodemailer from "nodemailer"
+import { transporter } from "../../lib/mailer"
 
 const router = Router()
 
@@ -199,28 +199,16 @@ function gerarTabelaHTML(dados: any) {
   return html;
 }
 
-const transporter = nodemailer.createTransport({
-  host: "sandbox.smtp.mailtrap.io",
-  port: 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.MAILTRAP_EMAIL,
-    pass: process.env.MAILTRAP_SENHA
-  },
-});
-
 async function enviaEmail(dados: any) {
 
   const mensagem = gerarTabelaHTML(dados)
 
-  const info = await transporter.sendMail({
+  await transporter.sendMail({
     from: 'Oficina Mecânica <mecanicaOficina@gmail.com>',
     to: dados.email,
     subject: "Relatório de Serviços - Oficina Mecânica",
     text: "Status dos serviços...", // plain‑text body
     html: mensagem, // HTML body
   });
-
-  console.log("Message sent:", info.messageId);
 }
 export default router
