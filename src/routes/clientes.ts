@@ -199,10 +199,10 @@ async function enviaEmail(dados: any) {
   const mensagem = gerarTabelaHTML(dados)
 
   const info = await transporter.sendMail({
-    from: 'Cantina Escolar <cantina@gmail.com>',
+    from: 'Oficina Mecânica <mecanicaOficina@gmail.com>',
     to: dados.email,
-    subject: "Relatório de Vendas e Depósitos",
-    text: "Relatório de Vendas...", // plain‑text body
+    subject: "Relatório de Serviços - Oficina Mecânica",
+    text: "Status dos serviços...", // plain‑text body
     html: mensagem, // HTML body
   });
 
