@@ -69,18 +69,33 @@ router.put("/:id", async (req, res) => {
 })
 
 router.delete("/:id", async (req, res) => {
-    // recebe o id passado como parâmetro
-    const { id } = req.params
+  const id = Number(req.params.id)
 
-    // realiza a exclusão da seleção
-    try {
-        const cliente = await prisma.cliente.delete({
-            where: { id: Number(id) }
-        })
-        res.status(200).json(cliente)
-    } catch (error) {
-        res.status(500).json({ erro: error })
+  if (Number.isNaN(id)) {
+    res.status(400).json({ erro: "ID inválido" })
+    return
+  }
+
+  try {
+    const cliente = await prisma.cliente.delete({
+      where: { id }
+    })
+    res.status(200).json(cliente)
+  } catch (error: any) {
+    if (error?.code === "P2025") {
+      res.status(404).json({ erro: "Cliente não cadastrado" })
+      return
     }
+
+    if (error?.code === "P2003") {
+      res.status(409).json({
+        erro: "Cliente possui registros vinculados (veículos, depósitos ou ordens) e não pode ser excluído"
+      })
+      return
+    }
+
+    res.status(500).json({ erro: "Erro interno do servidor" })
+  }
 })
 
 router.get("/email/:id", async (req, res) => {
