@@ -9,24 +9,24 @@ datasource db {
 
 model Cliente {
   id           Int         @id @default(autoincrement())
-  nome         String      @db.VarChar(60) 
+  nome         String      @db.VarChar(60)
   telefone     String      @db.VarChar(20)
   saldo        Decimal     @db.Decimal(9,2) @default(0)
-  email        String      @db.VarChar(60) 
-  veiculos      Veiculo[]
-  depositos     Deposito[]
+  email        String      @db.VarChar(60)
+  veiculos     Veiculo[]
+  depositos    Deposito[]
   @@map("clientes")
 }
 
 model Veiculo {
-  id           Int         @id @default(autoincrement())
-  modelo       String      @db.VarChar(30) 
-  marca        String      @db.VarChar(30) 
-  placa        String      @db.VarChar(40) 
-  ano          Decimal     @db.Decimal(4,0)
-  status       String?     @db.Text
-  clienteId    Int
-  cliente      Cliente     @relation(fields: [clienteId], references: [id])
+  id            Int           @id @default(autoincrement())
+  modelo        String        @db.VarChar(30)
+  marca         String        @db.VarChar(30)
+  placa         String        @db.VarChar(40)
+  ano           Decimal       @db.Decimal(4,0)
+  status        String?       @db.Text
+  clienteId     Int
+  cliente       Cliente       @relation(fields: [clienteId], references: [id])
   ordensServico OrdemServico[]
   @@map("veiculos")
 }
@@ -37,6 +37,9 @@ model OrdemServico {
   dataSaida    DateTime?            @map("data_saida")
   status       StatusOrdemServico   @default(ABERTA)
   valor        Decimal              @db.Decimal(9,2)
+  // Tópico 7 — Soft Delete
+  deleted      Boolean              @default(false)
+  deletedAt    DateTime?            @map("deleted_at")
   veiculoId    Int                  @map("VeiculoId")
   veiculo      Veiculo              @relation(fields: [veiculoId], references: [id])
   servicoId    Int                  @map("ServicoId")
@@ -45,21 +48,49 @@ model OrdemServico {
 }
 
 model Servico {
-  id         Int        @id @default(autoincrement())
-  descricao  String     @db.VarChar(60) 
-  valor      Decimal    @db.Decimal(9,2)
+  id            Int            @id @default(autoincrement())
+  descricao     String         @db.VarChar(60)
+  valor         Decimal        @db.Decimal(9,2)
   ordensServico OrdemServico[]
   @@map("servicos")
 }
 
 model Deposito {
-  id         Int        @id @default(autoincrement())
-  cliente    Cliente      @relation(fields: [clienteId], references: [id])
-  clienteId  Int
-  valor      Decimal    @db.Decimal(9,2)
-  tipo       Tipos
-  data       DateTime   @default(now())
+  id        Int      @id @default(autoincrement())
+  cliente   Cliente  @relation(fields: [clienteId], references: [id])
+  clienteId Int
+  valor     Decimal  @db.Decimal(9,2)
+  tipo      Tipos
+  data      DateTime @default(now())
   @@map("depositos")
+}
+
+// ── Segurança ─────────────────────────────────────────────────────────────
+
+model Usuario {
+  id                 Int       @id @default(autoincrement())
+  nome               String    @db.VarChar(60)
+  email              String    @unique @db.VarChar(60)
+  senha              String    @db.VarChar(255)
+  // Tópico 4 — Último login
+  ultimoLogin        DateTime? @map("ultimo_login")
+  primeiroAcesso     Boolean   @default(true) @map("primeiro_acesso")
+  // Recuperação de senha
+  codigoRecuperacao  String?   @db.VarChar(10) @map("codigo_recuperacao")
+  codigoExpiracao    DateTime? @map("codigo_expiracao")
+  logs               Log[]
+  @@map("usuarios")
+}
+
+model Log {
+  id         Int      @id @default(autoincrement())
+  usuarioId  Int      @map("usuario_id")
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id])
+  acao       String   @db.VarChar(100)
+  detalhes   String?  @db.Text
+  ip         String?  @db.VarChar(45)
+  criadoEm  DateTime @default(now()) @map("criado_em")
+  @@map("logs")
 }
 
 enum Tipos {
